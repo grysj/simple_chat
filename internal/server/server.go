@@ -102,7 +102,10 @@ func (s *Server) handleClientTCP(conn net.Conn) {
 func (s *Server) handleBroadcast() {
 	for msg := range s.msgQueueTCP {
 		s.mu.Lock()
-		for _, conn := range s.clients {
+		for c, conn := range s.clients {
+			if c == msg.UserFrom {
+				continue
+			}
 			encoder := gob.NewEncoder(conn)
 			encoder.Encode(msg)
 		}
@@ -128,9 +131,18 @@ func (s *Server) handleUDP() {
 		if err != nil {
 			continue
 		}
-
+		fmt.Println("Received UDP message")
+		var msg udp.UdpMessage
+		err = gob.NewDecoder(connUDP).Decode(&msg)
+		if err != nil {
+			fmt.Println("Error decoding UDP message:", err)
+			continue
+		}
 		s.mu.Lock()
-		for _, conn := range s.clients {
+		for c, conn := range s.clients {
+			if c == msg.FromUser {
+				continue
+			}
 			var port int
 			if localAddr, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
 				port = localAddr.Port
@@ -138,7 +150,6 @@ func (s *Server) handleUDP() {
 				fmt.Println("error: ", err)
 				continue
 			}
-
 			_, err = connUDP.WriteToUDP(buffer, &net.UDPAddr{
 				Port: port,
 				IP:   net.ParseIP("127.0.0.1"),

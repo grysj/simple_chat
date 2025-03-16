@@ -164,6 +164,8 @@ func (c *Client) SendAsciiUDP() {
 		fmt.Println("Failed to write to UDP connection: ", err)
 		return
 	}
+	fmt.Printf("\r%s:\n", msg.FromUser)
+	fmt.Printf("%s\n", msg.Ascii)
 
 }
 
